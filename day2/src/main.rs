@@ -1,6 +1,9 @@
 // https://adventofcode.com/2022/day/2
 
-use std::{fs::File, io::Read};
+use std::{
+    fs::File,
+    io::{BufRead, BufReader, Read},
+};
 
 #[derive(Copy, Clone, Debug)]
 enum Shape {
@@ -71,48 +74,37 @@ impl Round {
 
 fn main() {
     // Part 1: entry are interpreted as shapes
-    let input: Vec<Round> = {
-        let mut file = File::open("input").unwrap();
-        let mut raw = String::new();
-        file.read_to_string(&mut raw).unwrap();
-        raw.lines()
-            .map(|line| {
-                let mut hands = line.split(' ');
-                Round {
-                    theire: hands.next().unwrap().into(),
-                    mine: hands.next().unwrap().into(),
-                }
-            })
-            .collect()
-    };
+    let input = BufReader::new(File::open("input").unwrap())
+        .lines()
+        .map(|line| {
+            let line = line.unwrap();
+            let mut hands = line.split(' ');
+            Round {
+                theire: hands.next().unwrap().into(),
+                mine: hands.next().unwrap().into(),
+            }
+        });
 
     let score = input
-        .iter()
         .map(|round| round.mine as u64 + round.play() as u64)
         .fold(0, |score, round| score + round);
 
     println!("Part 1: My final score is: {}", score);
 
     // Part 2: Entries are interpreted as their play and the intended result
-    let input: Vec<Round> = {
-        let mut file = File::open("input").unwrap();
-        let mut raw = String::new();
-        file.read_to_string(&mut raw).unwrap();
-        raw.lines()
-            .map(|line| {
-                let mut hands = line.split(' ');
-                let theire = hands.next().unwrap().into();
-                let outcome = hands.next().unwrap().into();
-                Round::new_from_indended_outcome(theire, outcome)
-            })
-            .collect()
-    };
+    let input = BufReader::new(File::open("input").unwrap())
+        .lines()
+        .map(|line| {
+            let line = line.unwrap();
+            let mut hands = line.split(' ');
+            let theire = hands.next().unwrap().into();
+            let outcome = hands.next().unwrap().into();
+            Round::new_from_indended_outcome(theire, outcome)
+        });
 
     let score = input
-        .iter()
         .map(|round| round.mine as u64 + round.play() as u64)
         .fold(0, |score, round| score + round);
 
     println!("Part 2: My final score is: {}", score);
-
 }
