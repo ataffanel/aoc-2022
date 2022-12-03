@@ -29,7 +29,12 @@ fn main() {
         sums.peek().unwrap()
     );
 
-    let top_3 = sums.pop().unwrap() + sums.pop().unwrap() + sums.pop().unwrap();
+    let top_3 = sums
+        .into_sorted_vec()
+        .iter()
+        .rev()
+        .take(3)
+        .fold(0, |sum, cal| sum + cal);
 
     println!(
         "The 3 elves with the most calories have a total of: {}",
