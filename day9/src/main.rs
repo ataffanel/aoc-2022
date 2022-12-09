@@ -1,7 +1,9 @@
 use std::{
+    collections::HashSet,
     fs::{self, File},
     io::{BufRead, BufReader},
-    str::FromStr, collections::HashSet,
+    ops::Index,
+    str::FromStr,
 };
 
 use anyhow::{Error, Result};
@@ -14,20 +16,17 @@ struct Point {
 
 impl Point {
     fn new(x: i32, y: i32) -> Self {
-        Self {
-            x, y
-        }
+        Self { x, y }
     }
 
     fn chase(&mut self, other: &Point) {
-
         while !self.close_from(other) {
             if self.x < other.x {
                 self.x += 1;
             } else if self.x > other.x {
                 self.x -= 1;
             }
-    
+
             if self.y < other.y {
                 self.y += 1;
             } else if self.y > other.y {
@@ -46,43 +45,56 @@ impl Point {
     }
 
     fn close_from(&self, other: &Point) -> bool {
-        (self.x-other.x).abs() < 2 && (self.y-other.y).abs() < 2
+        (self.x - other.x).abs() < 2 && (self.y - other.y).abs() < 2
     }
 }
 
-struct Bridge {
+struct Bridge<const N: usize> {
     head: Point,
-    tail: Point,
+    tails: [Point; N],
 }
 
-impl Bridge {
+impl<const N: usize> Bridge<N> {
     fn new() -> Self {
         Bridge {
             head: Point { x: 0, y: 0 },
-            tail: Point { x: 0, y: 0 },
+            tails: [Point { x: 0, y: 0 }; N],
         }
     }
-}
 
-impl Bridge {
     fn move_head(&mut self, direction: Direction) {
         self.head.r#move(direction);
-        self.tail.chase(&self.head);
+
+        for t in 0..N {
+            match t {
+                0 => self.tails[0].chase(&self.head),
+                _ => {
+                    let tail_to_chase = self.tails[t - 1];
+                    self.tails[t].chase(&tail_to_chase);
+                }
+            }
+        }
     }
 
     fn display(&self, visited: &[Point]) {
-        for y in (0..7).rev() {
-            for x in 0..7 {
+        for y in (-20..20).rev() {
+            for x in -20..20 {
                 match Point::new(x, y) {
                     p if p == self.head => print!("H"),
-                    p if p == self.tail => print!("T"),
+                    p if self.tails.contains(&p) => {
+                        print!("{}", self.tails.iter().position(|t| *t == p).unwrap() + 1)
+                    }
                     p if visited.contains(&p) => print!("#"),
-                    Point{x: 0, y: 0} => print!("s"),
+                    Point { x: 0, y: 0 } => print!("s"),
                     _ => print!("."),
                 }
             }
             println!("");
         }
+    }
+
+    fn tail(&self) -> Point {
+        *self.tails.last().unwrap()
     }
 }
 
@@ -98,7 +110,7 @@ impl FromStr for Direction {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s{
+        match s {
             "U" => Ok(Self::Up),
             "D" => Ok(Self::Down),
             "L" => Ok(Self::Left),
@@ -112,25 +124,59 @@ fn main() -> Result<()> {
     let moves = BufReader::new(File::open("input")?).lines().map(|l| {
         let l = l.unwrap();
         let mut elements = l.split(" ");
-        (Direction::from_str(elements.next().unwrap()).unwrap(), elements.next().unwrap().parse().unwrap())
+        (
+            Direction::from_str(elements.next().unwrap()).unwrap(),
+            elements.next().unwrap().parse().unwrap(),
+        )
     });
 
-    let mut bridge = Bridge::new();
+    let mut bridge = Bridge::<1>::new();
     let mut visited = Vec::new();
 
     for (direction, n) in moves {
-        for _ in 0..n{
+        for _ in 0..n {
             bridge.move_head(direction);
-            if !visited.contains(&bridge.tail) {
-                visited.push(bridge.tail);
+            if !visited.contains(&bridge.tail()) {
+                visited.push(bridge.tail());
             }
 
-            // dbg!(m.0, bridge.head, bridge.tail);
             // println!("{:?} {}", direction, n);
             // bridge.display(&visited);
             // println!("");
         }
     }
+
+    println!("Visited locations: {}", visited.len());
+
+    // Part 2
+
+    let moves = BufReader::new(File::open("input")?).lines().map(|l| {
+        let l = l.unwrap();
+        let mut elements = l.split(" ");
+        (
+            Direction::from_str(elements.next().unwrap()).unwrap(),
+            elements.next().unwrap().parse().unwrap(),
+        )
+    });
+
+    let mut bridge = Bridge::<9>::new();
+    let mut visited = Vec::new();
+
+    for (direction, n) in moves {
+        for _ in 0..n {
+            bridge.move_head(direction);
+            if !visited.contains(&bridge.tail()) {
+                visited.push(bridge.tail());
+            }
+
+            // println!("{:?} {}", direction, n);
+            // bridge.display(&visited);
+            // println!("");
+        }
+    }
+
+    bridge.display(&visited);
+    println!("");
 
     println!("Visited locations: {}", visited.len());
 
