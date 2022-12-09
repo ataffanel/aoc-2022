@@ -1,8 +1,6 @@
 use std::{
-    collections::HashSet,
-    fs::{self, File},
-    io::{BufRead, BufReader},
-    ops::Index,
+    fs::File,
+    io::{BufReader, BufRead},
     str::FromStr,
 };
 
@@ -89,7 +87,7 @@ impl<const N: usize> Bridge<N> {
                     _ => print!("."),
                 }
             }
-            println!("");
+            println!();
         }
     }
 
@@ -123,7 +121,7 @@ impl FromStr for Direction {
 fn main() -> Result<()> {
     let moves = BufReader::new(File::open("input")?).lines().map(|l| {
         let l = l.unwrap();
-        let mut elements = l.split(" ");
+        let mut elements = l.split(' ');
         (
             Direction::from_str(elements.next().unwrap()).unwrap(),
             elements.next().unwrap().parse().unwrap(),
@@ -152,7 +150,7 @@ fn main() -> Result<()> {
 
     let moves = BufReader::new(File::open("input")?).lines().map(|l| {
         let l = l.unwrap();
-        let mut elements = l.split(" ");
+        let mut elements = l.split(' ');
         (
             Direction::from_str(elements.next().unwrap()).unwrap(),
             elements.next().unwrap().parse().unwrap(),
@@ -176,7 +174,7 @@ fn main() -> Result<()> {
     }
 
     bridge.display(&visited);
-    println!("");
+    println!();
 
     println!("Visited locations: {}", visited.len());
 
