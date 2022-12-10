@@ -104,10 +104,10 @@ fn main() -> anyhow::Result<()> {
         }
 
         if beam.step() {
-            println!("");
+            println!();
         }
     }
-    println!("");
+    println!();
 
     println!("The result is {}", result);
 
