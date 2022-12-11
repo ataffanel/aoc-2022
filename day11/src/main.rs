@@ -38,8 +38,8 @@ where
 
 #[derive(Debug)]
 struct Operation {
-    a: Operand<u32>,
-    b: Operand<u32>,
+    a: Operand<u64>,
+    b: Operand<u64>,
     plus: bool,
 }
 
@@ -61,7 +61,7 @@ impl FromStr for Operation {
 }
 
 impl Operation {
-    fn execute(&self, old: u32) -> u32 {
+    fn execute(&self, old: u64) -> u64 {
         let a = self.a.get(old);
         let b = self.b.get(old);
         match self.plus {
@@ -73,9 +73,9 @@ impl Operation {
 
 #[derive(Debug)]
 struct Monkey {
-    items: Vec<u32>,
+    items: Vec<u64>,
     operation: Operation,
-    test_div_by: u32,
+    test_div_by: u64,
     send_if_true: usize,
     send_if_false: usize,
 }
@@ -133,11 +133,11 @@ impl Monkey {
         })
     }
 
-    fn execute(&mut self) -> Vec<(usize, u32)> {
+    fn execute(&mut self) -> Vec<(usize, u64)> {
         let mut transfers = Vec::new();
         for item in self.items.iter() {
             let mut worry = self.operation.execute(*item);
-            worry /= 3;
+            // worry /= 3;
             if worry % self.test_div_by == 0 {
                 transfers.push((self.send_if_true, worry));
             } else {
@@ -158,11 +158,16 @@ fn main() -> anyhow::Result<()> {
     let mut monkeys: Vec<_> = std::iter::from_fn(|| Monkey::new_from_lines(&mut lines)).collect();
     let mut n_inspections: Vec<_> = monkeys.iter().map(|_| 0).collect();
 
+    let common_divider = monkeys
+        .iter()
+        .map(|m| m.test_div_by)
+        .fold(1, |acc, val| acc * val);
+
     // dbg!(monkeys);
 
     // Simulate the monkey throw!
 
-    for round in 0..20 {
+    for round in 0..10_000 {
         println!("Round {}:", round + 1);
 
         for i in 0..monkeys.len() {
@@ -176,6 +181,13 @@ fn main() -> anyhow::Result<()> {
 
         for (i, monkey) in monkeys.iter().enumerate() {
             println!(" Monkey {}: {:?}", i + 1, monkey.items);
+        }
+
+        // Keep integers in check!
+        for monkey in monkeys.iter_mut() {
+            for item in monkey.items.iter_mut() {
+                *item %= common_divider;
+            }
         }
     }
 
