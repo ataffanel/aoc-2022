@@ -1,7 +1,6 @@
 use std::{
-    collections::HashMap,
     fs,
-    str::{FromStr, Lines},
+    str::{FromStr, Lines}, ops::{Mul, Add, DivAssign, Rem},
 };
 
 #[derive(Debug)]
@@ -13,37 +12,40 @@ enum Operand<T> {
 impl<T> FromStr for Operand<T>
 where
     T: FromStr,
+    <T as FromStr>::Err: std::fmt::Debug + Sync + Send + std::error::Error
 {
-    type Err = <T as FromStr>::Err;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "old" => Ok(Operand::Old),
-            _ => Ok(Operand::Some(s.parse()?)),
+            _ => Ok(Operand::Some(s.parse().unwrap())),
         }
     }
 }
 
 impl<T> Operand<T>
-where
-    T: Copy,
+    where T: Clone
 {
     fn get(&self, old: T) -> T {
         match self {
             Operand::Old => old,
-            Operand::Some(value) => *value,
+            Operand::Some(value) => value.clone(),
         }
     }
 }
 
 #[derive(Debug)]
-struct Operation {
-    a: Operand<u64>,
-    b: Operand<u64>,
+struct Operation<T> {
+    a: Operand<T>,
+    b: Operand<T>,
     plus: bool,
 }
 
-impl FromStr for Operation {
+impl <T> FromStr for Operation<T>
+    where T: FromStr,
+        <T as FromStr>::Err: std::fmt::Debug + Sync + Send + std::error::Error
+{
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -60,9 +62,11 @@ impl FromStr for Operation {
     }
 }
 
-impl Operation {
-    fn execute(&self, old: u64) -> u64 {
-        let a = self.a.get(old);
+impl <T> Operation<T>
+    where T: Clone + Mul<Output = T> + Add<Output = T>
+{
+    fn execute(&self, old: T) -> T {
+        let a = self.a.get(old.clone());
         let b = self.b.get(old);
         match self.plus {
             false => a * b,
@@ -72,10 +76,10 @@ impl Operation {
 }
 
 #[derive(Debug)]
-struct Monkey {
-    items: Vec<u64>,
-    operation: Operation,
-    test_div_by: u64,
+struct Monkey<T> {
+    items: Vec<T>,
+    operation: Operation<T>,
+    test_div_by: T,
     send_if_true: usize,
     send_if_false: usize,
 }
@@ -91,7 +95,12 @@ fn item_of_next_line(lines: &mut Lines) -> String {
         .into()
 }
 
-impl Monkey {
+impl <T> Monkey<T>
+    where T: Clone + FromStr + std::fmt::Debug + Mul<Output = T> + Add<Output = T> + DivAssign + From<u32> + Rem,
+        <T as FromStr>::Err: std::fmt::Debug + Sync + Send + std::error::Error,
+        <T as Rem>::Output: PartialEq<T>
+        
+{
     fn new_from_lines(lines: &mut Lines) -> Option<Self> {
         if let None = lines.next() {
             return None;
@@ -133,12 +142,12 @@ impl Monkey {
         })
     }
 
-    fn execute(&mut self) -> Vec<(usize, u64)> {
+    fn execute(&mut self) -> Vec<(usize, T)> {
         let mut transfers = Vec::new();
         for item in self.items.iter() {
-            let mut worry = self.operation.execute(*item);
-            // worry /= 3;
-            if worry % self.test_div_by == 0 {
+            let mut worry = self.operation.execute(item.clone());
+            // worry /= 3.into();
+            if worry.clone() % self.test_div_by.clone() == 0.into() {
                 transfers.push((self.send_if_true, worry));
             } else {
                 transfers.push((self.send_if_false, worry));
@@ -151,21 +160,19 @@ impl Monkey {
     }
 }
 
+// This can (but does not have to) be `num::BigUint` or `rug::Integer`
+// u64 takes 0.6s while the two bigint implementation are at about 0.95s on my machine
+type NumImplementation = u64;
+
 fn main() -> anyhow::Result<()> {
-    let mut input = fs::read_to_string("input")?;
+    let input = fs::read_to_string("input")?;
     let mut lines = input.lines();
 
-    let mut monkeys: Vec<_> = std::iter::from_fn(|| Monkey::new_from_lines(&mut lines)).collect();
+    let mut monkeys: Vec<Monkey<NumImplementation>> = std::iter::from_fn(|| Monkey::new_from_lines(&mut lines)).collect();
     let mut n_inspections: Vec<_> = monkeys.iter().map(|_| 0).collect();
 
-    let common_divider = monkeys
-        .iter()
-        .map(|m| m.test_div_by)
-        .fold(1, |acc, val| acc * val);
-
-    // dbg!(monkeys);
-
-    // Simulate the monkey throw!
+    let common_divider: NumImplementation = monkeys.iter().map(|m| m.test_div_by.clone()).fold(1u32.into(), |acc, val| acc * val);
+    println!("Common divider: {}", &common_divider);
 
     for round in 0..10_000 {
         println!("Round {}:", round + 1);
@@ -175,18 +182,14 @@ fn main() -> anyhow::Result<()> {
             let transfers = monkeys[i].execute();
 
             for (index, item) in transfers.iter() {
-                monkeys[*index].items.push(*item);
+                monkeys[*index].items.push(item.clone());
             }
         }
 
-        for (i, monkey) in monkeys.iter().enumerate() {
-            println!(" Monkey {}: {:?}", i + 1, monkey.items);
-        }
-
-        // Keep integers in check!
+        // Keep worry in check!
         for monkey in monkeys.iter_mut() {
             for item in monkey.items.iter_mut() {
-                *item %= common_divider;
+                *item %= common_divider.clone()
             }
         }
     }
