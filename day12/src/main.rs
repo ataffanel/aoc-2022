@@ -1,4 +1,8 @@
-use std::{fs, str::FromStr, fmt::{self, Display}};
+use std::{
+    fmt::{self, Display},
+    fs,
+    str::FromStr,
+};
 
 use colorful::Colorful;
 
@@ -50,19 +54,31 @@ struct Position {
 
 impl Position {
     fn left(&self) -> Self {
-        Position { x: self.x-1, y: self.y }
+        Position {
+            x: self.x - 1,
+            y: self.y,
+        }
     }
 
     fn right(&self) -> Self {
-        Position {x: self.x+1, y: self.y}
+        Position {
+            x: self.x + 1,
+            y: self.y,
+        }
     }
 
     fn up(&self) -> Self {
-        Position { x: self.x, y: self.y-1 }
+        Position {
+            x: self.x,
+            y: self.y - 1,
+        }
     }
 
     fn down(&self) -> Self {
-        Position {x: self.x, y: self.y+1}
+        Position {
+            x: self.x,
+            y: self.y + 1,
+        }
     }
 
     fn move_to(&mut self, direction: Direction) {
@@ -131,14 +147,18 @@ impl FromStr for Maze {
 
 impl Maze {
     fn get_tile(&self, p: Position) -> Option<Terrain> {
-        if p.x < 0 || p.x as usize >= self.field.len() || p.y < 0 || p.y as usize >= self.field[0].len() {
+        if p.x < 0
+            || p.x as usize >= self.field.len()
+            || p.y < 0
+            || p.y as usize >= self.field[0].len()
+        {
             None
         } else {
             Some(self.field[p.x as usize][p.y as usize])
         }
     }
 
-    fn get_neighbor_tile(&self, direction: Direction) -> Option<Terrain>{
+    fn get_neighbor_tile(&self, direction: Direction) -> Option<Terrain> {
         match direction {
             Direction::Up => self.get_tile(self.cursor.up()),
             Direction::Down => self.get_tile(self.cursor.down()),
@@ -161,7 +181,11 @@ impl Maze {
     }
 
     fn get_distance(&self, p: Position) -> Option<usize> {
-        if p.x < 0 || p.x as usize >= self.field.len() || p.y < 0 || p.y as usize >= self.field[0].len() {
+        if p.x < 0
+            || p.x as usize >= self.field.len()
+            || p.y < 0
+            || p.y as usize >= self.field[0].len()
+        {
             None
         } else {
             Some(self.distances[p.x as usize][p.y as usize])
@@ -185,14 +209,20 @@ impl Maze {
     // Returns true when we have reached the end!
     fn step(&mut self) -> bool {
         if let Some(position) = self.to_visit.pop_front() {
-
             let current_distance = self.get_distance(position).unwrap();
 
-             for direction in [Direction::Up, Direction::Left, Direction::Right, Direction::Down] {
+            for direction in [
+                Direction::Up,
+                Direction::Left,
+                Direction::Right,
+                Direction::Down,
+            ] {
                 self.cursor = position;
                 if let Some(tile) = self.get_neighbor_tile(direction) {
                     if !self.reverse {
-                        if matches!(tile, Terrain::Free(_) | Terrain::End) && tile.height() < self.get_tile(self.cursor).unwrap().height() + 2 {
+                        if matches!(tile, Terrain::Free(_) | Terrain::End)
+                            && tile.height() < self.get_tile(self.cursor).unwrap().height() + 2
+                        {
                             self.set_neighbor_distance(direction, current_distance + 1);
                             let mut neighbor = position.clone();
                             neighbor.move_to(direction);
@@ -200,7 +230,9 @@ impl Maze {
                             self.set_neighbor_tile(direction, Terrain::Visited(tile.height()));
                         }
                     } else {
-                        if matches!(tile, Terrain::Free(_) | Terrain::Start) && tile.height() + 2 > self.get_tile(self.cursor).unwrap().height()  {
+                        if matches!(tile, Terrain::Free(_) | Terrain::Start)
+                            && tile.height() + 2 > self.get_tile(self.cursor).unwrap().height()
+                        {
                             self.set_neighbor_distance(direction, current_distance + 1);
                             let mut neighbor = position.clone();
                             neighbor.move_to(direction);
@@ -208,9 +240,8 @@ impl Maze {
                             self.set_neighbor_tile(direction, Terrain::Visited(tile.height()));
                         }
                     }
-                    
                 }
-             }
+            }
 
             false
         } else {
@@ -221,10 +252,10 @@ impl Maze {
 
 impl Display for Maze {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-
         for line in &self.field {
-            let line = line.iter().map(|tile| {
-                match tile {
+            let line = line
+                .iter()
+                .map(|tile| match tile {
                     Terrain::Visited(n) => {
                         let c = (n + 'a' as u8) as char;
                         format!("{}", c.to_string().red())
@@ -235,12 +266,12 @@ impl Display for Maze {
                     }
                     Terrain::Start => "S".to_owned(),
                     Terrain::End => "E".to_owned(),
-                }
-            }).fold(String::new(), |acc, s| {
-                let mut res = acc.clone();
-                res.push_str(&s);
-                res
-            });
+                })
+                .fold(String::new(), |acc, s| {
+                    let mut res = acc.clone();
+                    res.push_str(&s);
+                    res
+                });
             f.write_str(&line)?;
             f.write_str(&"\n".to_owned())?;
         }
@@ -258,7 +289,10 @@ fn main() -> anyhow::Result<()> {
     while !maze.step() {}
 
     println!("{}", &maze);
-    println!("Distance to the end: {:?}", maze.get_distance(maze.end).unwrap());
+    println!(
+        "Distance to the end: {:?}",
+        maze.get_distance(maze.end).unwrap()
+    );
     println!("------\n");
 
     // Running the algorithm the other way arround ...
@@ -276,7 +310,10 @@ fn main() -> anyhow::Result<()> {
 
     for x in 0..maze.distances.len() {
         for y in 0..maze.distances[0].len() {
-            let p = Position{x: x as isize, y: y as isize};
+            let p = Position {
+                x: x as isize,
+                y: y as isize,
+            };
             if let Some(Terrain::Visited(0)) = maze.get_tile(p) {
                 if maze.get_distance(p).unwrap() < minimum_distance {
                     minimum_distance = maze.get_distance(p).unwrap();
