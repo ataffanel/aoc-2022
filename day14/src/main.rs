@@ -1,4 +1,4 @@
-use std::{collections::HashMap, str::FromStr, fs};
+use std::{collections::HashMap, fs, str::FromStr};
 
 #[derive(Debug, Default, Hash, PartialEq, Eq, Clone, Copy)]
 struct Position {
@@ -20,23 +20,33 @@ impl FromStr for Position {
 
 impl Position {
     fn down(self) -> Position {
-        Position { x: self.x, y: self.y + 1 }
+        Position {
+            x: self.x,
+            y: self.y + 1,
+        }
     }
 
     fn down_left(self) -> Position {
-        Position { x: self.x - 1, y: self.y + 1 }
+        Position {
+            x: self.x - 1,
+            y: self.y + 1,
+        }
     }
 
     fn down_right(self) -> Position {
-        Position { x: self.x + 1, y: self.y + 1 }
+        Position {
+            x: self.x + 1,
+            y: self.y + 1,
+        }
     }
 }
 
 #[derive(Debug, Default)]
 enum Cell {
-    #[default] Air,
+    #[default]
+    Air,
     Rock,
-    Sand
+    Sand,
 }
 
 #[derive(Debug)]
@@ -58,44 +68,38 @@ impl FromStr for Cave {
 
             while let Some(next) = corners.next().map(|c| c.parse::<Position>().unwrap()) {
                 if prev.x == next.x {
-                    println!("Vertical");
                     let x = prev.x;
                     let start_y = next.y.min(prev.y);
                     let stop_y = next.y.max(prev.y);
                     for y in start_y..=stop_y {
-                        cave.insert(Position{x, y}, Cell::Rock);
+                        cave.insert(Position { x, y }, Cell::Rock);
                     }
                 }
                 if prev.y == next.y {
-                    println!("Horizontal");
                     let y = prev.y;
                     let start_x = next.x.min(prev.x);
                     let stop_x = next.x.max(prev.x);
                     for x in start_x..=stop_x {
-                        println!(",");
-                        cave.insert(Position{x, y}, Cell::Rock);
+                        cave.insert(Position { x, y }, Cell::Rock);
                     }
                 }
 
-                println!("Wall from {:?} to {:?}", prev, next);
-                
                 bottom = bottom.max(next.y);
 
                 prev = next;
             }
         }
 
-        Ok(Cave{cave, bottom})
+        Ok(Cave { cave, bottom })
     }
 }
 
 impl Cave {
     fn sand_step(&mut self) -> bool {
-        let mut sand = Position{x: 500, y: 0};
+        let mut sand = Position { x: 500, y: 0 };
 
         loop {
             if let Cell::Air = self.cave.get(&sand.down()).unwrap_or(&Cell::Air) {
-                dbg!(self.cave.get(&sand.down()));
                 sand = sand.down();
             } else if let Cell::Air = self.cave.get(&sand.down_left()).unwrap_or(&Cell::Air) {
                 sand = sand.down_left();
@@ -106,30 +110,30 @@ impl Cave {
                 break;
             }
 
-            dbg!(sand);
+            // dbg!(sand);
 
             if sand.y > self.bottom {
-                return true;
+                self.cave.insert(sand, Cell::Sand);
+                break;
             }
         }
 
-        false
+        sand == Position { x: 500, y: 0 }
     }
 }
-
 
 fn main() -> anyhow::Result<()> {
     let mut cave: Cave = fs::read_to_string("input")?.parse()?;
 
     let mut n_sand = 0;
 
-    dbg!(&cave);
+    // dbg!(&cave);
 
     while !cave.sand_step() {
         n_sand += 1;
     }
 
-    println!("Number of sand drop: {}", n_sand);
+    println!("Number of sand drop to close the source: {}", n_sand + 1);
 
     Ok(())
 }
