@@ -98,9 +98,9 @@ fn main() -> anyhow::Result<()> {
         }
 
         if beam.is_lit(processor.x) {
-            print!("#");
+            print!("🎅");
         } else {
-            print!(" ");
+            print!("🎄");
         }
 
         if beam.step() {
