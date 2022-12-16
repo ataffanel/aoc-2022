@@ -8,6 +8,8 @@ use colorful::Colorful;
 
 use std::collections::VecDeque;
 
+const DISPLAY: bool = true;
+
 #[derive(Debug, Clone, Copy)]
 enum Terrain {
     Free(u8),
@@ -262,7 +264,7 @@ impl Display for Maze {
                     }
                     Terrain::Free(n) => {
                         let c = (n + 'a' as u8) as char;
-                        format!("{}", c.to_string().hsl(0.5f32, 1.0f32, *n as f32 / 25.0f32))
+                        format!("{}", c.to_string().hsl(0.5f32, 1.0f32, 0.2 + *n as f32 / 25.0f32))
                     }
                     Terrain::Start => "S".to_owned(),
                     Terrain::End => "E".to_owned(),
@@ -286,7 +288,13 @@ fn main() -> anyhow::Result<()> {
     println!("{}", &maze);
     println!("------\n");
 
-    while !maze.step() {}
+    while !maze.step() {
+        if DISPLAY {
+            let screen = format!("{}", &maze);
+            println!("{}", screen);
+            print!("\x1B[2J");
+        }
+    }
 
     println!("{}", &maze);
     println!(
