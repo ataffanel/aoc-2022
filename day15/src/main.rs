@@ -1,9 +1,4 @@
 use std::{fs, str::FromStr};
-use rayon::prelude::*;
-
-enum Cell {
-    Scanned,
-}
 
 #[derive(Debug, Default, Clone, Copy, Hash, PartialEq, Eq)]
 struct Position {
@@ -20,7 +15,7 @@ impl Position {
 struct Sensor {
     position: Position,
     sensing_distance: isize,
-    beacon: Position,
+    _beacon: Position,
 }
 
 impl Sensor {
@@ -79,7 +74,7 @@ impl FromStr for Field {
             sensors.push(Sensor {
                 position: sensor,
                 sensing_distance,
-                beacon,
+                _beacon: beacon,
             });
 
             if sensor.x - sensing_distance < min_sensing.x {
@@ -108,42 +103,45 @@ impl Field {
     fn is_sensed(&self, target: Position) -> bool {
         self.sensors
             .iter()
-            .find(|sensor| sensor.can_sense(target))
-            .is_some()
+            .any(|sensor| sensor.can_sense(target))
+    }
+
+    fn border_search(&self, limit: isize) -> Option<Position> {
+        for y in 0..=limit {
+            for sensor in &self.sensors {
+                let x1 = sensor.position.x
+                    - (sensor.sensing_distance - (sensor.position.y - y).abs())
+                    - 1;
+                let x2 = sensor.position.x
+                    + (sensor.sensing_distance - (sensor.position.y - y).abs())
+                    + 1;
+
+                if x1 > 0 && x1 < limit && !self.is_sensed(Position { x: x1, y }) {
+                    return Some(Position { x: x1, y });
+                }
+                if x2 > 0 && x2 < limit && !self.is_sensed(Position { x: x2, y }) {
+                    return Some(Position { x: x2, y });
+                }
+            }
+        }
+        None
     }
 }
 
 fn main() -> anyhow::Result<()> {
     let input: Field = fs::read_to_string("input")?.parse()?;
 
-    dbg!(input.min_sensing, input.max_sensing);
-
     let n_scanned: usize = (input.min_sensing.x..input.max_sensing.x)
         .filter(|x| input.is_sensed(Position { x: *x, y: 2000000 }))
         .count();
 
-    for x in -4..=26 {
-        if input.is_sensed(Position { x, y: 10 }) {
-            print!("#");
-        } else {
-            print!(".");
-        }
-    }
-    println!();
+    println!("n scanned at 2000000: {}", n_scanned - 1);
 
-    println!("n scanned at 10: {}", n_scanned -1);
+    let beacon = input.border_search(4000000).unwrap();
 
-    // Searching the beacon
-    (0..=4000000).into_par_iter().for_each(|y| {
-        for x in 0..=4000000 {
-            if !input.is_sensed(Position{x,y}) {
-                dbg!(x, y);
-            }
-        }
-        if y % 1000 == 0 {
-            println!("Progress: {}%", y as f32 * 100.0f32 / 4000000.0f32);
-        }
-    });
+    let frequency = beacon.x * 4000000 + beacon.y;
+
+    println!("Frequency: {}", frequency);
 
     Ok(())
 }
