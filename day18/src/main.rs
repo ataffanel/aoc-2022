@@ -46,14 +46,14 @@ enum Cell {
 }
 
 fn print_map(map: &HashMap<Point, Cell>) {
-    let max_x = map.iter().map(|p| p.0.x).max().unwrap() as isize;
-    let max_y = map.iter().map(|p| p.0.y).max().unwrap() as isize;
-    let max_z = map.iter().map(|p| p.0.z).max().unwrap() as isize;
+    let max_x = map.iter().map(|p| p.0.x).max().unwrap();
+    let max_y = map.iter().map(|p| p.0.y).max().unwrap();
+    let max_z = map.iter().map(|p| p.0.z).max().unwrap();
 
-    for z in 0..max_z+1 {
-        for y in 0..max_y+1 {
-            for x in 0..max_x+1 {
-                match map.get(&Point{x,y,z}).cloned().unwrap_or_default() {
+    for z in 0..max_z + 1 {
+        for y in 0..max_y + 1 {
+            for x in 0..max_x + 1 {
+                match map.get(&Point { x, y, z }).cloned().unwrap_or_default() {
                     Cell::Air => print!("."),
                     Cell::Steam => print!("~"),
                     Cell::Rock => print!("#"),
@@ -90,9 +90,9 @@ fn main() -> anyhow::Result<()> {
     // Part2: To isolate pockets, we create a 3D MAP then fill the outdide with steam
     // The new result is the number of adjacent rock to steam
     let mut map = HashMap::new();
-    let max_x = cubes.iter().map(|p| p.x).max().unwrap() as isize;
-    let max_y = cubes.iter().map(|p| p.y).max().unwrap() as isize;
-    let max_z = cubes.iter().map(|p| p.z).max().unwrap() as isize;
+    let max_x = cubes.iter().map(|p| p.x).max().unwrap();
+    let max_y = cubes.iter().map(|p| p.y).max().unwrap();
+    let max_z = cubes.iter().map(|p| p.z).max().unwrap();
 
     dbg!(max_x, max_y, max_z);
 
@@ -106,7 +106,6 @@ fn main() -> anyhow::Result<()> {
 
     while let Some(current) = to_visit.pop_back() {
         // println!("=========\nCurrent: {:?}", current);
-        
 
         // dbg!(&to_visit);
         // visit all neighbor that are air
@@ -119,30 +118,30 @@ fn main() -> anyhow::Result<()> {
             (0, -1, 0),
             (0, 1, 0),
             (0, 0, -1),
-            (0, 0,  1),
+            (0, 0, 1),
         ] {
-                    let neighbor = Point {
-                        x: current.x + x,
-                        y: current.y + y,
-                        z: current.z + z,
-                    };
-                    // dbg!(neighbor);
-                    if neighbor.x < -1
-                        || neighbor.x > max_x + 1
-                        || neighbor.y < 0
-                        || neighbor.y > max_y + 1
-                        || neighbor.z < 0
-                        || neighbor.z > max_z + 1
-                    {
-                        // println!("Dropping {:?} because out of bound", neighbor);
-                        continue;
-                    }
-                    // dbg!(neighbor);
+            let neighbor = Point {
+                x: current.x + x,
+                y: current.y + y,
+                z: current.z + z,
+            };
+            // dbg!(neighbor);
+            if neighbor.x < -1
+                || neighbor.x > max_x + 1
+                || neighbor.y < 0
+                || neighbor.y > max_y + 1
+                || neighbor.z < 0
+                || neighbor.z > max_z + 1
+            {
+                // println!("Dropping {:?} because out of bound", neighbor);
+                continue;
+            }
+            // dbg!(neighbor);
 
-                    if let Cell::Air = map.get(&neighbor).cloned().unwrap_or_default() {
-                        // dbg!(neighbor);
-                        map.insert(neighbor, Cell::Steam);
-                        to_visit.push_front(neighbor);
+            if let Cell::Air = map.get(&neighbor).cloned().unwrap_or_default() {
+                // dbg!(neighbor);
+                map.insert(neighbor, Cell::Steam);
+                to_visit.push_front(neighbor);
                 //     }
                 // }
             }
@@ -168,9 +167,7 @@ fn main() -> anyhow::Result<()> {
             // println!("Point: {:?}", &cube);
             map.iter()
                 // .inspect(|i| { dbg!(i); })
-                .filter(|(point, cell)| {
-                    matches!(cell, Cell::Steam) && point.adjacent(&cube)
-                })
+                .filter(|(point, cell)| matches!(cell, Cell::Steam) && point.adjacent(&cube))
                 .count()
         })
         .sum();
