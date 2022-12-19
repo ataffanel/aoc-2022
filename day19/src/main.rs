@@ -135,15 +135,15 @@ impl State {
     }
 }
 
-fn test_blueprint(blueprint: &Blueprint) -> usize {
+fn test_blueprint(blueprint: &Blueprint, runtime: usize) -> usize {
     println!("\nRunning bluepring:");
-    dbg!(blueprint);
+    // dbg!(blueprint);
     // let mut to_visit = VecDeque::new();
     let mut to_visit = BTreeSet::new();
     to_visit.insert(State::default());
 
-    for round in 0..24 {
-        println!("Round {}, {} states to inspect", round, to_visit.len());
+    for round in 0..runtime {
+        // println!("Round {}, {} states to inspect", round, to_visit.len());
         let mut new_states = BTreeSet::new();
         // Empty the queue once on each round
         for mut state in to_visit.iter().cloned() {
@@ -160,7 +160,8 @@ fn test_blueprint(blueprint: &Blueprint) -> usize {
 
                 state.geode_bot += 1;
                 new_states.insert(state);
-            } else if blueprint.can_build_obsidian_bot(&state.stash) {
+            }
+            if blueprint.can_build_obsidian_bot(&state.stash) {
                 let mut state = state.clone();
                 state.stash -= blueprint.obsidian_bot;
 
@@ -168,7 +169,7 @@ fn test_blueprint(blueprint: &Blueprint) -> usize {
 
                 state.obsidian_bot += 1;
                 new_states.insert(state);
-            } else {
+            }  {
                 if blueprint.can_build_ore_bot(&state.stash) {
                     let mut state = state.clone();
                     state.stash -= blueprint.ore_bot;
@@ -196,17 +197,20 @@ fn test_blueprint(blueprint: &Blueprint) -> usize {
             
         }
 
-        dbg!(&new_states.first());
+        // dbg!(&new_states.first());
 
-        to_visit = new_states;
+        let max_geodes = to_visit
+            .iter()
+            .map(|state| state.stash.geode)
+            .max()
+            .unwrap();
+
+        to_visit = new_states.iter().filter(|state| state.stash.geode >= 2.max(max_geodes) - 2).cloned().collect();
         println!(
-            "Ammount of geodes: {}",
-            to_visit
-                .iter()
-                .map(|state| state.stash.geode)
-                .max()
-                .unwrap()
+            "{}: Ammount of geodes: {}",
+            round, max_geodes,
         );
+        // println!("Pruned: {} states", new_states.len() - to_visit.len());
     }
 
     // Now contains all the states after 24 round
@@ -237,14 +241,23 @@ fn main() -> anyhow::Result<()>{
 
     let blueprints: Vec<Blueprint> = fs::read_to_string("input")?.lines().map(|line| line.parse().unwrap()).collect();
 
-    let quality_sum = blueprints
-        .iter()
-        .enumerate()
-        .map(|(n, blueprint)| (n + 1) * test_blueprint(blueprint))
-        .inspect(|q| println!("Quality: {}", q))
-        .sum::<usize>();
+    // let quality_sum = blueprints
+    //     .iter()
+    //     .enumerate()
+    //     .map(|(n, blueprint)| (n + 1) * test_blueprint(blueprint, 24))
+    //     .inspect(|q| println!("Quality: {}", q))
+    //     .sum::<usize>();
 
-    println!("Sum of the blueprint: {}", quality_sum);
+    // println!("Sum of the blueprint: {}", quality_sum);
+
+    let quality_product = blueprints
+        .iter()
+        .take(3)
+        .map(|blueprint| test_blueprint(blueprint, 32))
+        .inspect(|q| println!("Geodes: {}", q))
+        .product::<usize>();
+
+    println!("Product of the 3 first blueprint: {}", quality_product);
 
     Ok(())
 }
