@@ -1,7 +1,8 @@
 use std::{
-    collections::{BTreeSet, VecDeque},
+    collections::{BTreeSet},
+    fs,
     ops::{Sub, SubAssign},
-    str::FromStr, fs,
+    str::FromStr,
 };
 
 #[derive(Debug)]
@@ -19,10 +20,34 @@ impl FromStr for Blueprint {
         let mut elements = s.split(':').nth(1).unwrap().split('.');
 
         Ok(Blueprint {
-            ore_bot: elements.next().unwrap().split("costs ").nth(1).unwrap().parse()?,
-            clay_bot: elements.next().unwrap().split("costs ").nth(1).unwrap().parse()?,
-            obsidian_bot: elements.next().unwrap().split("costs ").nth(1).unwrap().parse()?,
-            geode_bot: elements.next().unwrap().split("costs ").nth(1).unwrap().parse()?,
+            ore_bot: elements
+                .next()
+                .unwrap()
+                .split("costs ")
+                .nth(1)
+                .unwrap()
+                .parse()?,
+            clay_bot: elements
+                .next()
+                .unwrap()
+                .split("costs ")
+                .nth(1)
+                .unwrap()
+                .parse()?,
+            obsidian_bot: elements
+                .next()
+                .unwrap()
+                .split("costs ")
+                .nth(1)
+                .unwrap()
+                .parse()?,
+            geode_bot: elements
+                .next()
+                .unwrap()
+                .split("costs ")
+                .nth(1)
+                .unwrap()
+                .parse()?,
         })
     }
 }
@@ -71,7 +96,7 @@ impl FromStr for Stash {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut stash = Stash::default();
         for item in s.split(" and ") {
-            let mut item = item.split(" ");
+            let mut item = item.split(' ');
             let quantity = item.next().unwrap().parse()?;
             let element = item.next().unwrap();
             match element {
@@ -136,14 +161,14 @@ impl State {
 }
 
 fn test_blueprint(blueprint: &Blueprint, runtime: usize) -> usize {
-    println!("\nRunning bluepring:");
+    // println!("\nRunning bluepring:");
     // dbg!(blueprint);
     // let mut to_visit = VecDeque::new();
     let mut to_visit = BTreeSet::new();
     to_visit.insert(State::default());
 
-    for round in 0..runtime {
-        // println!("Round {}, {} states to inspect", round, to_visit.len());
+    for _round in 0..runtime {
+        // printroundln!("Round {}, {} states to inspect", round, to_visit.len());
         let mut new_states = BTreeSet::new();
         // Empty the queue once on each round
         for mut state in to_visit.iter().cloned() {
@@ -152,7 +177,7 @@ fn test_blueprint(blueprint: &Blueprint, runtime: usize) -> usize {
             // dbg!(&state);
 
             // Now the branches, try to build all the possible bots and push the resulting state in the queue
-            if blueprint.can_build_geode_bot(&state.stash){
+            if blueprint.can_build_geode_bot(&state.stash) {
                 let mut state = state.clone();
                 state.stash -= blueprint.geode_bot;
 
@@ -169,32 +194,31 @@ fn test_blueprint(blueprint: &Blueprint, runtime: usize) -> usize {
 
                 state.obsidian_bot += 1;
                 new_states.insert(state);
-            }  {
-                if blueprint.can_build_ore_bot(&state.stash) {
-                    let mut state = state.clone();
-                    state.stash -= blueprint.ore_bot;
+            }
 
-                    state.run_bots();
+            if blueprint.can_build_ore_bot(&state.stash) {
+                let mut state = state.clone();
+                state.stash -= blueprint.ore_bot;
 
-                    state.ore_bot += 1;
-                    new_states.insert(state);
-                }
+                state.run_bots();
 
-                if blueprint.can_build_clay_bot(&state.stash) {
-                    let mut state = state.clone();
-                    state.stash -= blueprint.clay_bot;
+                state.ore_bot += 1;
+                new_states.insert(state);
+            }
 
-                    state.run_bots();
+            if blueprint.can_build_clay_bot(&state.stash) {
+                let mut state = state.clone();
+                state.stash -= blueprint.clay_bot;
 
-                    state.clay_bot += 1;
-                    new_states.insert(state);
-                }
+                state.run_bots();
+
+                state.clay_bot += 1;
+                new_states.insert(state);
             }
 
             // Building nothing is always a possible outcome
             state.run_bots();
             new_states.insert(state);
-            
         }
 
         // dbg!(&new_states.first());
@@ -205,11 +229,12 @@ fn test_blueprint(blueprint: &Blueprint, runtime: usize) -> usize {
             .max()
             .unwrap();
 
-        to_visit = new_states.iter().filter(|state| state.stash.geode >= 2.max(max_geodes) - 2).cloned().collect();
-        println!(
-            "{}: Ammount of geodes: {}",
-            round, max_geodes,
-        );
+        to_visit = new_states
+            .iter()
+            .filter(|state| state.stash.geode >= 2.max(max_geodes) - 2)
+            .cloned()
+            .collect();
+        // println!("{}: Ammount of geodes: {}", round, max_geodes,);
         // println!("Pruned: {} states", new_states.len() - to_visit.len());
     }
 
@@ -222,9 +247,9 @@ fn test_blueprint(blueprint: &Blueprint, runtime: usize) -> usize {
         .unwrap()
 }
 
-fn main() -> anyhow::Result<()>{
+fn main() -> anyhow::Result<()> {
     #[rustfmt::skip]
-    let blueprints = [
+    let _blueprints = [
         Blueprint {
             ore_bot: Stash {ore: 4, ..Default::default()},
             clay_bot: Stash {ore: 2, ..Default::default()},
@@ -239,16 +264,19 @@ fn main() -> anyhow::Result<()>{
         },
     ];
 
-    let blueprints: Vec<Blueprint> = fs::read_to_string("input")?.lines().map(|line| line.parse().unwrap()).collect();
+    let blueprints: Vec<Blueprint> = fs::read_to_string("input")?
+        .lines()
+        .map(|line| line.parse().unwrap())
+        .collect();
 
-    // let quality_sum = blueprints
-    //     .iter()
-    //     .enumerate()
-    //     .map(|(n, blueprint)| (n + 1) * test_blueprint(blueprint, 24))
-    //     .inspect(|q| println!("Quality: {}", q))
-    //     .sum::<usize>();
+    let quality_sum = blueprints
+        .iter()
+        .enumerate()
+        .map(|(n, blueprint)| (n + 1) * test_blueprint(blueprint, 24))
+        .inspect(|q| println!("Quality: {}", q))
+        .sum::<usize>();
 
-    // println!("Sum of the blueprint: {}", quality_sum);
+    println!("Sum of the blueprint: {}", quality_sum);
 
     let quality_product = blueprints
         .iter()
