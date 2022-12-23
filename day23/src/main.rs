@@ -32,7 +32,6 @@ impl Add<Point> for Point {
 
 enum Tile {
     Elf,
-    Empty,
 }
 
 struct Map {
@@ -43,12 +42,11 @@ struct Map {
 impl Map {
     // Returns Elf's next move
     fn next_move(&self, elf: Point) -> Point {
-
         // Check if there is any neighbor
         let mut has_neighbor = false;
         for x in -1..=1 {
             for y in -1..=1 {
-                if !(x==0 && y==0) {
+                if !(x == 0 && y == 0) {
                     let to_test = elf + Point::new(x, y);
                     // dbg!(Point::new(x, y), to_test);
                     has_neighbor |= self.map.contains_key(&to_test);
@@ -63,37 +61,43 @@ impl Map {
         } else {
             // println!("Trying to move {:?}", elf);
         }
-        
+
         for checks in &self.checks {
             let can_move = !checks.iter().any(|offset| {
                 let to_check = elf + *offset;
                 self.map.contains_key(&to_check)
             });
-    
+
             if can_move {
-                return elf + checks[0]
-            } 
+                return elf + checks[0];
+            }
         }
 
         elf
     }
 
-    fn move_elves(&mut self) {
+    fn move_elves(&mut self) -> bool {
         let mut new_map = HashMap::new();
+        let mut any_moved = false;
+        let mut collisions: HashMap<Point, usize> = HashMap::new();
+
+        // Pre-calculate collisions:
+        for pos in self.map.keys() {
+            let new_pos = self.next_move(*pos);
+
+            let n: usize = collisions.get(&new_pos).cloned().unwrap_or_default();
+            collisions.insert(new_pos, n + 1);
+        }
 
         dbg!(&self.checks[0]);
 
-        for (pos, _) in self.map.iter() {
+        for pos in self.map.keys() {
             let new_pos = self.next_move(*pos);
 
-            // dbg!(new_pos);
+            let should_move = collisions[&new_pos] == 1;
 
-            let should_move = !self
-                .map
-                .keys()
-                .filter(|p| **p != *pos)
-                .map(|p| self.next_move(*p))
-                .any(|p| p == new_pos);
+            // let should_move = true;
+            any_moved |= new_pos != *pos;
 
             // dbg!(should_move);
             if should_move {
@@ -110,6 +114,8 @@ impl Map {
         // Rotate the checks
         let checks = self.checks.pop_front().unwrap();
         self.checks.push_back(checks);
+
+        any_moved
     }
 
     fn count_space(&self) -> usize {
@@ -184,13 +190,23 @@ fn main() -> Result<()> {
 
     map.print();
 
-    for _ in 0..10 {
-        println!("--------------");
-        map.move_elves();
+    let mut round = 1;
+    loop {
+        println!("Round {} --------------", round);
+        let any_moved = map.move_elves();
         map.print();
+
+        if !any_moved {
+            break;
+        }
+
+        if round == 10 {
+            println!("Space left after 10 round (part 1): {}", map.count_space());
+        }
+        round += 1;
     }
 
-    println!("Space left: {}", map.count_space());
+    println!("No one moved after {} rounds (Part 2)", round);
 
     Ok(())
 }
