@@ -137,7 +137,7 @@ impl Board {
                     x: self.cursor.position.x,
                     y: self.cursor.position.y - 1,
                 };
-                if let Some(_) = self.map.get(&new_pos) {
+                if self.map.get(&new_pos).is_some() {
                     new_pos
                 } else {
                     let new_y = self
@@ -158,7 +158,7 @@ impl Board {
                     x: self.cursor.position.x - 1,
                     y: self.cursor.position.y,
                 };
-                if let Some(_) = self.map.get(&new_pos) {
+                if self.map.get(&new_pos).is_some() {
                     new_pos
                 } else {
                     let new_x = self
@@ -179,7 +179,7 @@ impl Board {
                     x: self.cursor.position.x,
                     y: self.cursor.position.y + 1,
                 };
-                if let Some(_) = self.map.get(&new_pos) {
+                if self.map.get(&new_pos).is_some() {
                     new_pos
                 } else {
                     let new_y = self
@@ -200,7 +200,7 @@ impl Board {
                     x: self.cursor.position.x + 1,
                     y: self.cursor.position.y,
                 };
-                if let Some(_) = self.map.get(&new_pos) {
+                if self.map.get(&new_pos).is_some() {
                     new_pos
                 } else {
                     let new_x = self
@@ -235,7 +235,7 @@ impl Board {
                 break;
             }
 
-            let max_x = line.iter().map(|(p, _)| p.x).max().unwrap();
+            let max_x = line.keys().map(|p| p.x).max().unwrap();
 
             for x in 0..=max_x {
                 match self.visited.get(&Point::new(x, y)) {
