@@ -110,12 +110,18 @@ impl Maze {
         }
     }
     
-    fn solve_min_distance(&mut self) -> usize {
+    fn solve_min_distance(&mut self, back: bool) -> usize {
         
         let mut round = 0;
         
         // We start at the start!
-        let mut state = BTreeSet::from_iter(vec![Point::new(0,0)].into_iter());
+        let mut state = BTreeSet::new();
+        
+        if !back {
+            state.insert(Point::new(0,0));
+        } else {
+            state.insert(Point::new(self.width-1, self.height));
+        }
         
         loop {
             self.move_wind();
@@ -144,7 +150,11 @@ impl Maze {
                 new_states
             }).flatten().collect();
             
-            if state.iter().any(|p| *p == Point::new(self.width-1, self.height)) {
+            if !back && state.iter().any(|p| *p == Point::new(self.width-1, self.height)) {
+                break;
+            }
+            
+            if back && state.iter().any(|p| *p == Point::new(0, 0)) {
                 break;
             }
             
@@ -181,7 +191,12 @@ impl Maze {
 fn main() -> Result<()> {
     let mut maze: Maze = fs::read_to_string("input")?.parse()?;
     
-    println!("Min distance to goal: {}", maze.solve_min_distance());
+    let goal = maze.solve_min_distance(false);
+    let back = maze.solve_min_distance(true);
+    let again = maze.solve_min_distance(false);
+    
+    println!("Min time to goal: {}", goal);
+    println!("Time to goal, back, and again: {}", goal + back + again);
     
     
     
